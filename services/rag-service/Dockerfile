@@ -5,6 +5,7 @@ WORKDIR /app
 
 # Install system dependencies
 # Docling requires OpenGL and graphics libraries for PDF processing
+# Tesseract OCR for document text extraction
 RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
@@ -15,6 +16,8 @@ RUN apt-get update && apt-get install -y \
     libxext6 \
     libxrender1 \
     libgomp1 \
+    tesseract-ocr \
+    tesseract-ocr-eng \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for caching

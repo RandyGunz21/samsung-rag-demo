@@ -16,7 +16,7 @@ from langchain_core.documents import Document
 from langchain_docling import DoclingLoader
 from langchain_docling.loader import ExportType
 from docling.document_converter import DocumentConverter, PdfFormatOption
-from docling.datamodel.pipeline_options import PdfPipelineOptions
+from docling.datamodel.pipeline_options import PdfPipelineOptions, TesseractCliOcrOptions
 from docling.datamodel.base_models import InputFormat
 
 from src.rag_system.utils.logger import get_logger
@@ -185,6 +185,8 @@ class DocumentLoader:
             # Create custom DocumentConverter with external plugins enabled
             # This allows langchain_docling plugin to be loaded
             pipeline_options = PdfPipelineOptions()
+            pipeline_options.do_ocr = True
+            pipeline_options.ocr_options = TesseractCliOcrOptions()
             pipeline_options.allow_external_plugins = True
 
             doc_converter = DocumentConverter(

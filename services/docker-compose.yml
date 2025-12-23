@@ -72,8 +72,8 @@ services:
       - PORT=8000
       - CHROMA_PERSIST_DIR=/app/data/chroma
       # Ollama hosted externally via Cloudflare tunnel
-      - OLLAMA_URL=https://victory-lines-childhood-scholars.trycloudflare.com
-      - DEBUG=falSE
+      - OLLAMA_URL=http://localhost:11434
+      - DEBUG=false
     deploy:
       resources:
         limits:
@@ -105,7 +105,7 @@ services:
       - PORT=8001
       - RAG_SERVICE_URL=http://rag-service:8000/api/v1
       # Ollama hosted externally via Cloudflare tunnel
-      - OLLAMA_URL=https://victory-lines-childhood-scholars.trycloudflare.com
+      - OLLAMA_URL=http://localhost:11434
       - CORS_ORIGINS=http://localhost:3000,http://localhost:5173,http://frontend:3000
       - DEBUG=false
     depends_on:
