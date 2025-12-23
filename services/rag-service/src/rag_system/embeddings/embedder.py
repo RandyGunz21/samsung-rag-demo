@@ -19,7 +19,6 @@ class EmbeddingGenerator:
         self,
         model_name: str = "qwen3-embedding:8b",
         base_url: str = "http://localhost:11434",
-        bearer_token: str = None,
     ):
         """
         Initialize embedding generator using Ollama.
@@ -27,28 +26,17 @@ class EmbeddingGenerator:
         Args:
             model_name: Ollama embedding model name (e.g., 'qwen3-embedding:8b')
             base_url: Ollama API base URL (e.g., 'http://localhost:11434')
-            bearer_token: Bearer token for authentication (required for cloudflare tunnels)
         """
         self.model_name = model_name
         self.base_url = base_url
-        self.bearer_token = bearer_token
 
         logger.info(f"Initializing Ollama embeddings model: {model_name}")
         logger.info(f"Connecting to Ollama at: {base_url}")
-
-        # Prepare client kwargs for authentication
-        client_kwargs = {}
-        if bearer_token:
-            client_kwargs["headers"] = {
-                "Authorization": f"Bearer {bearer_token}"
-            }
-            logger.info("Bearer token authentication configured")
 
         # Initialize Ollama embeddings
         self.embeddings = OllamaEmbeddings(
             model=model_name,
             base_url=base_url,
-            client_kwargs=client_kwargs if client_kwargs else None,
         )
 
         logger.info(f"Ollama embeddings model loaded successfully")

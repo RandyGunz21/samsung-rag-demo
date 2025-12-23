@@ -74,7 +74,6 @@ class ChatAgent:
                 temperature=config.get("llm.temperature", 0.1),
                 max_tokens=config.get("llm.max_tokens", 512),
                 timeout=config.get("llm.timeout", 60),
-                bearer_token=config.get("llm.bearer_token"),
             )
         return self._llm
 

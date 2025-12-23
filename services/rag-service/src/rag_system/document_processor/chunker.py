@@ -29,7 +29,6 @@ class DocumentChunker:
         max_chunk_size: int = 1500,  # NEW: Maximum chunk size for post-processing
         separators: Optional[List[str]] = None,
         add_start_index: bool = True,
-        bearer_token: str = None,
     ):
         """
         Initialize semantic document chunker.
@@ -47,14 +46,12 @@ class DocumentChunker:
             max_chunk_size: Maximum characters per chunk before recursive splitting (default: 1500)
             separators: Separators for recursive text splitting
             add_start_index: Whether to add start index metadata to chunks
-            bearer_token: Bearer token for authentication (required for cloudflare tunnels)
         """
         self.embedding_model = embedding_model
         self.base_url = base_url
         self.breakpoint_threshold_type = breakpoint_threshold_type
         self.breakpoint_threshold_amount = breakpoint_threshold_amount
         self.add_start_index = add_start_index
-        self.bearer_token = bearer_token
 
         # Chunk size constraints for post-processing
         self.max_chunk_size = max_chunk_size
@@ -66,18 +63,9 @@ class DocumentChunker:
         try:
             logger.info(f"Initializing OllamaEmbeddings with model: {embedding_model}")
 
-            # Prepare client kwargs for authentication
-            client_kwargs = {}
-            if bearer_token:
-                client_kwargs["headers"] = {
-                    "Authorization": f"Bearer {bearer_token}"
-                }
-                logger.info("Bearer token authentication configured for chunker")
-
             self.embeddings = OllamaEmbeddings(
                 model=embedding_model,
                 base_url=base_url,
-                client_kwargs=client_kwargs if client_kwargs else None,
             )
 
             # Initialize SemanticChunker

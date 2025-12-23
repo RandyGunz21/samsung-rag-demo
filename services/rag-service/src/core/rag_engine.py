@@ -57,19 +57,10 @@ class RAGEngine:
 
             logger.info("Initializing LLM for multi-query retrieval...")
 
-            # Prepare client kwargs for authentication
-            client_kwargs = {}
-            bearer_token = self.config.get("llm.bearer_token")
-            if bearer_token:
-                client_kwargs["headers"] = {
-                    "Authorization": f"Bearer {bearer_token}"
-                }
-
             self._llm = ChatOllama(
                 model=self.config.get("llm.model", "gemma2:2b"),
                 base_url=self.config.get("llm.base_url", "http://localhost:11434"),
                 temperature=0.0,  # Deterministic for query generation
-                client_kwargs=client_kwargs if client_kwargs else None,
             )
             logger.info(f"LLM initialized: {self.config.get('llm.model', 'gemma2:2b')}")
 
@@ -152,14 +143,12 @@ class RAGEngine:
             max_chunk_size=self.config.get("document_processing.max_chunk_size", 1500),
             separators=self.config.get("document_processing.separators"),
             add_start_index=self.config.get("document_processing.add_start_index", True),
-            bearer_token=self.config.get("embeddings.bearer_token"),
         )
 
         # Embeddings
         self.embedding_generator = EmbeddingGenerator(
             model_name=self.config.get("embeddings.model"),
             base_url=self.config.get("embeddings.base_url", "http://localhost:11434"),
-            bearer_token=self.config.get("embeddings.bearer_token"),
         )
 
         # Vector store

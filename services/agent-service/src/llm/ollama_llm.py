@@ -13,12 +13,11 @@ class OllamaLLM:
 
     def __init__(
         self,
-        model: str = "qwen2.5:7b",
+        model: str = "llama4:scout",
         base_url: str = "http://localhost:11434",
         temperature: float = 0.1,
         max_tokens: int = 512,
         timeout: int = 60,
-        bearer_token: Optional[str] = None,
     ):
         """
         Initialize Ollama LLM.
@@ -29,7 +28,6 @@ class OllamaLLM:
             temperature: LLM temperature (0.0 - 1.0)
             max_tokens: Maximum tokens to generate
             timeout: Request timeout in seconds
-            bearer_token: Optional bearer token for authentication
         """
         self.model = model
         self.base_url = base_url

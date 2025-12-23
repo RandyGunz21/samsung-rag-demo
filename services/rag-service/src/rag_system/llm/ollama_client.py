@@ -22,7 +22,6 @@ class OllamaLLM:
         temperature: float = 0.1,
         max_tokens: Optional[int] = 512,
         timeout: int = 60,
-        bearer_token: str = None,
     ):
         """
         Initialize Ollama LLM client.
@@ -33,24 +32,14 @@ class OllamaLLM:
             temperature: Sampling temperature (0=deterministic, 1=creative)
             max_tokens: Maximum tokens to generate
             timeout: Request timeout in seconds
-            bearer_token: Bearer token for authentication (required for cloudflare tunnels)
         """
         self.model = model
         self.base_url = base_url
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.timeout = timeout
-        self.bearer_token = bearer_token
 
         logger.info(f"Initializing Ollama LLM: model={model}, base_url={base_url}")
-
-        # Prepare client kwargs for authentication
-        client_kwargs = {}
-        if bearer_token:
-            client_kwargs["headers"] = {
-                "Authorization": f"Bearer {bearer_token}"
-            }
-            logger.info("Bearer token authentication configured")
 
         self.llm = ChatOllama(
             model=model,
@@ -58,7 +47,6 @@ class OllamaLLM:
             temperature=temperature,
             num_predict=max_tokens,
             timeout=timeout,
-            client_kwargs=client_kwargs if client_kwargs else None,
         )
 
         logger.info("Ollama LLM initialized successfully")
