@@ -1,0 +1,19 @@
+# AI Agent Service Dependencies
+
+# Web Framework
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+
+# HTTP Client for RAG Service
+httpx>=0.26.0
+
+# LLM Integration
+langchain>=1.1.0
+langchain-ollama>=1.0.0
+
+# Pydantic for data validation
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+
+# Utilities
+python-dotenv>=1.0.0

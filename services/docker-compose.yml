@@ -1,0 +1,293 @@
+# RAG Demo - Unified Docker Compose Configuration
+# Location: services/docker-compose.yml
+# Orchestrates all RAG system services
+# Updated: 2025-12-09 - Added vercel-chatbot service (fresh clone)
+#
+# Services:
+#   - postgres (5432): PostgreSQL database for chat history
+#   - redis (6379): Celery task queue and frontend cache
+#   - rag-service (8000): Document retrieval and RAG pipeline
+#   - agent-service (8001): AI chat orchestration
+#   - rag-tester (8002): Evaluation and testing service
+#   - celery-worker: Async evaluation worker
+#   - frontend (3000): AI chatbot UI with Vercel AI SDK (existing)
+#   - vercel-chatbot (3100): Fresh clone of Vercel AI chatbot (NEW)
+#   - rag-admin-ui (3001): RAG management dashboard
+#
+# Ollama is hosted externally via Cloudflare tunnel
+#
+# Usage: docker-compose -f services/docker-compose.yml up -d
+# Or:    cd services && docker-compose up -d
+
+services:
+  # PostgreSQL - User and chat history database for frontend
+  postgres:
+    image: postgres:16-alpine
+    container_name: rag-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=ai_chatbot
+      - POSTGRES_USER=aiuser
+      - POSTGRES_PASSWORD=aipassword123
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - rag_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aiuser -d ai_chatbot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis - Celery task queue for async evaluation
+  redis:
+    image: redis:7-alpine
+    container_name: rag-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - rag_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # RAG Service - Document retrieval and pipeline orchestration
+  rag-service:
+    build:
+      context: ./rag-service
+      dockerfile: Dockerfile
+    container_name: rag-service
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - CHROMA_PERSIST_DIR=/app/data/chroma
+      # Ollama hosted externally via Cloudflare tunnel
+      - OLLAMA_URL=https://victory-lines-childhood-scholars.trycloudflare.com
+      - DEBUG=falSE
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+    volumes:
+      - ../data:/app/data
+      - ../docs:/app/docs:ro
+      - ../config:/app/config:ro
+    networks:
+      - rag_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # AI Agent Service - LLM orchestration and chat interface
+  agent-service:
+    build:
+      context: ./agent-service
+      dockerfile: Dockerfile
+    container_name: agent-service
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8001
+      - RAG_SERVICE_URL=http://rag-service:8000/api/v1
+      # Ollama hosted externally via Cloudflare tunnel
+      - OLLAMA_URL=https://victory-lines-childhood-scholars.trycloudflare.com
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:5173,http://frontend:3000
+      - DEBUG=false
+    depends_on:
+      rag-service:
+        condition: service_healthy
+    networks:
+      - rag_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # RAG Tester Service - Evaluation and quality testing
+  rag-tester:
+    build:
+      context: ./rag-tester
+      dockerfile: Dockerfile
+    container_name: rag-tester
+    restart: unless-stopped
+    ports:
+      - "8002:8001"  # External 8002, internal 8001
+    volumes:
+      - ./rag-tester/data:/app/data
+      - ./rag-tester/src:/app/src  # Mount source for development
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - RAG_SERVICE_URL=http://rag-service:8000
+      - DATA_DIR=/app/data
+    depends_on:
+      redis:
+        condition: service_healthy
+      rag-service:
+        condition: service_healthy
+    networks:
+      - rag_network
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8001 --reload
+
+  # Celery Worker - Async evaluation task processing
+  celery-worker:
+    build:
+      context: ./rag-tester
+      dockerfile: Dockerfile
+    container_name: rag-celery-worker
+    restart: unless-stopped
+    volumes:
+      - ./rag-tester/data:/app/data
+      - ./rag-tester/src:/app/src  # Mount source for development
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - RAG_SERVICE_URL=http://rag-service:8000
+      - DATA_DIR=/app/data
+    depends_on:
+      redis:
+        condition: service_healthy
+      rag-service:
+        condition: service_healthy
+    networks:
+      - rag_network
+    command: celery -A src.celery_app worker --loglevel=info
+
+  # Frontend Service - Vercel AI Chatbot UI with RAG Integration
+  frontend:
+    build:
+      context: ./ai-frontend
+      dockerfile: Dockerfile
+      args:
+        # Build-time environment variables
+        RAG_BACKEND_URL: http://agent-service:8001
+        AUTH_SECRET: P3mCb+Ew02Rm4MdHU9xed/7YdnVfdIjLU8EgHr1mP+I=
+        POSTGRES_URL: ${POSTGRES_URL:-}
+    container_name: frontend
+    restart: unless-stopped
+    ports:
+      - "3100:3000"
+    environment:
+      # Runtime environment variables
+      - NODE_ENV=production
+      - RAG_BACKEND_URL=http://agent-service:8001
+      # PostgreSQL database for chat history and user management
+      - POSTGRES_URL=postgres://aiuser:aipassword123@postgres:5432/ai_chatbot
+      # Optional Redis for resumable streams
+      - REDIS_URL=redis://redis:6379/0
+      # NextAuth configuration
+      - AUTH_SECRET=P3mCb+Ew02Rm4MdHU9xed/7YdnVfdIjLU8EgHr1mP+I=
+      - AUTH_TRUST_HOST=true
+      # Disable Vercel features not needed for self-hosted
+      - NEXT_TELEMETRY_DISABLED=1
+    depends_on:
+      postgres:
+        condition: service_healthy
+      agent-service:
+        condition: service_healthy
+    networks:
+      - rag_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # RAG Admin UI - Management dashboard for RAG system
+  rag-admin-ui:
+    build:
+      context: ./rag-admin-ui
+      dockerfile: Dockerfile
+    container_name: rag-admin-ui
+    restart: unless-stopped
+    ports:
+      - "3001:3000"  # External 3001, internal 3000
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_RAG_SERVICE_URL=http://rag-service:8000/api/v1
+      - NEXT_PUBLIC_TESTER_SERVICE_URL=http://rag-tester:8001
+    depends_on:
+      rag-service:
+        condition: service_healthy
+      rag-tester:
+        condition: service_started
+    networks:
+      - rag_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Vercel AI Chatbot - Fresh Clone (NEW)
+  # Clones the official Vercel AI chatbot repo and runs it
+  # Uses separate database: vercel_chatbot (created by init script)
+  vercel-chatbot:
+    build:
+      context: ./vercel-chatbot
+      dockerfile: Dockerfile
+    container_name: vercel-chatbot
+    restart: unless-stopped
+    ports:
+      - "3000:3000"  # External 3100, internal 3000
+    environment:
+      # Database Configuration - Uses separate database
+      - POSTGRES_URL=postgres://aiuser:aipassword123@postgres:5432/vercel_chatbot
+      # NextAuth Configuration
+      - AUTH_SECRET=da97c81767f3849ebf6141f18ee5cf1d
+      - AUTH_TRUST_HOST=true
+      # Redis for resumable streams (optional)
+      - REDIS_URL=redis://redis:6379/1
+      # Backend Integration
+      - RAG_BACKEND_URL=http://agent-service:8001
+      # Disable Vercel telemetry
+      - NEXT_TELEMETRY_DISABLED=1
+      # IMPORTANT: Must be "development" for HTTP cookies to work
+      - NODE_ENV=development
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      agent-service:
+        condition: service_healthy
+    networks:
+      - rag_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+networks:
+  rag_network:
+    name: rag_network
+    driver: bridge
+
+volumes:
+  postgres-data:
+    name: rag-postgres-data
+  redis-data:
+    name: rag-redis-data

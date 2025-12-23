@@ -1,0 +1,105 @@
+# RAG Demo - Docker Compose Configuration
+# Location: services/docker-compose.yml
+# Orchestrates RAG Service, AI Agent Service, and Frontend
+# Ollama is hosted externally via Cloudflare tunnel
+# Updated: 2025-12-07
+#
+# Usage: docker-compose -f services/docker-compose.yml up -d
+# Or:    cd services && docker-compose up -d
+
+services:
+  # RAG Service - Document retrieval and pipeline orchestration
+  rag-service:
+    build:
+      context: ./rag-service
+      dockerfile: Dockerfile
+    container_name: rag-service
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - CHROMA_PERSIST_DIR=/app/data/chroma
+      # Ollama hosted externally via Cloudflare tunnel
+      - OLLAMA_URL=https://segment-classical-selected-submission.trycloudflare.com
+      - DEBUG=false
+    volumes:
+      - ../data:/app/data
+      - ../docs:/app/docs:ro
+      - ../config:/app/config:ro
+    networks:
+      - rag_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # AI Agent Service - LLM orchestration and chat interface
+  agent-service:
+    build:
+      context: ./agent-service
+      dockerfile: Dockerfile
+    container_name: agent-service
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8001
+      - RAG_SERVICE_URL=http://rag-service:8000
+      # Ollama hosted externally via Cloudflare tunnel
+      - OLLAMA_URL=https://segment-classical-selected-submission.trycloudflare.com
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:5173,http://frontend:3000
+      - DEBUG=false
+    depends_on:
+      rag-service:
+        condition: service_healthy
+    networks:
+      - rag_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend Service - Next.js AI Chatbot UI
+  frontend:
+    build:
+      context: ../frontend/ai-chatbot
+      dockerfile: Dockerfile
+      args:
+        # Build-time environment variables
+        # IMPORTANT: Update these with your actual values before deployment
+        AUTH_SECRET: ${AUTH_SECRET:-change-this-to-a-random-secret}
+        RAG_BACKEND_URL: http://agent-service:8001
+        POSTGRES_URL: ${POSTGRES_URL:-}
+    container_name: frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # Runtime environment variables
+      - NODE_ENV=production
+      - AUTH_SECRET=${AUTH_SECRET:-change-this-to-a-random-secret}
+      - RAG_BACKEND_URL=http://agent-service:8001
+      - POSTGRES_URL=${POSTGRES_URL:-}
+    depends_on:
+      agent-service:
+        condition: service_healthy
+    networks:
+      - rag_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+networks:
+  rag_network:
+    name: rag_network
+    driver: bridge
