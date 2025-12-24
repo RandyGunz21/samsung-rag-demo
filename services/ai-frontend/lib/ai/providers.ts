@@ -10,9 +10,10 @@ import { isTestEnvironment } from "../constants";
 // The actual AI processing is handled by agent-service via HTTP API
 const createDummyModel = (modelName: string): LanguageModel => {
   return {
-    specificationVersion: 'v1',
+    specificationVersion: 'V2',
     modelId: modelName,
     provider: 'agent-service',
+    supportedUrls: {},
 
     async doGenerate() {
       console.warn(`[AI Provider] Model ${modelName} called directly - this should not happen. All AI requests should go through agent-service.`);
