@@ -50,6 +50,7 @@ app.add_middleware(
         "http://localhost:5173",
         "http://localhost:8080",
         "http://agent-service:8080",
+        "http://142.170.89.112:17796",  # RAG Admin UI public access
     ],
     allow_credentials=True,
     allow_methods=["*"],
