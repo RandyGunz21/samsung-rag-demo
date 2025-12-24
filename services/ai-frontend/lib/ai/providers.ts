@@ -1,10 +1,31 @@
-import { gateway } from "@ai-sdk/gateway";
 import {
   customProvider,
   extractReasoningMiddleware,
   wrapLanguageModel,
+  type LanguageModelV1,
 } from "ai";
 import { isTestEnvironment } from "../constants";
+
+// Dummy language model for cases where AI SDK tries to use models directly
+// The actual AI processing is handled by agent-service via HTTP API
+const createDummyModel = (modelName: string): LanguageModelV1 => {
+  return {
+    specificationVersion: 'v1',
+    modelId: modelName,
+    provider: 'agent-service',
+    defaultObjectGenerationMode: 'json',
+
+    async doGenerate() {
+      console.warn(`[AI Provider] Model ${modelName} called directly - this should not happen. All AI requests should go through agent-service.`);
+      throw new Error('AI models should be accessed through agent-service HTTP API, not directly through AI SDK');
+    },
+
+    async doStream() {
+      console.warn(`[AI Provider] Model ${modelName} stream called directly - this should not happen. All AI requests should go through agent-service.`);
+      throw new Error('AI models should be accessed through agent-service HTTP API, not directly through AI SDK');
+    },
+  } as LanguageModelV1;
+};
 
 export const myProvider = isTestEnvironment
   ? (() => {
@@ -25,12 +46,12 @@ export const myProvider = isTestEnvironment
     })()
   : customProvider({
       languageModels: {
-        "chat-model": gateway.languageModel("xai/grok-2-vision-1212"),
+        "chat-model": createDummyModel("chat-model"),
         "chat-model-reasoning": wrapLanguageModel({
-          model: gateway.languageModel("xai/grok-3-mini"),
+          model: createDummyModel("chat-model-reasoning"),
           middleware: extractReasoningMiddleware({ tagName: "think" }),
         }),
-        "title-model": gateway.languageModel("xai/grok-2-1212"),
-        "artifact-model": gateway.languageModel("xai/grok-2-1212"),
+        "title-model": createDummyModel("title-model"),
+        "artifact-model": createDummyModel("artifact-model"),
       },
     });

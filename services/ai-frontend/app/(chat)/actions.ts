@@ -22,13 +22,19 @@ export async function generateTitleFromUserMessage({
 }: {
   message: UIMessage;
 }) {
-  const { text: title } = await generateText({
-    model: myProvider.languageModel("title-model"),
-    system: titlePrompt,
-    prompt: getTextFromMessage(message),
-  });
+  // Simple local title generation without AI model
+  // Extracts first line or first 50 characters from user message
+  const messageText = getTextFromMessage(message);
 
-  return title;
+  // Get first line (up to newline)
+  const firstLine = messageText.split('\n')[0];
+
+  // Truncate to max 50 characters and add ellipsis if needed
+  const title = firstLine.length > 50
+    ? firstLine.substring(0, 47) + '...'
+    : firstLine;
+
+  return title || 'New Chat';
 }
 
 export async function deleteTrailingMessages({ id }: { id: string }) {
