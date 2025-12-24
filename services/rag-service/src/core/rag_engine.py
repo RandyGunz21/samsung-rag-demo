@@ -147,15 +147,15 @@ class RAGEngine:
 
         # Embeddings
         self.embedding_generator = EmbeddingGenerator(
-            model_name=self.config.get("embeddings.model"),
+            model_name=self.config.get("embeddings.model", "qwen3-embedding:8b"),
             base_url=self.config.get("embeddings.base_url", "http://localhost:11434"),
         )
 
         # Vector store
         self.vector_store = ChromaVectorStore(
             embedding_function=self.embedding_generator.embeddings,
-            persist_directory=self.config.get("vector_store.persist_directory"),
-            collection_name=self.config.get("vector_store.collection_name"),
+            persist_directory=self.config.get("vector_store.persist_directory", "./data/vector_store"),
+            collection_name=self.config.get("vector_store.collection_name", "rag_documents"),
         )
 
         # Ingestion pipeline
