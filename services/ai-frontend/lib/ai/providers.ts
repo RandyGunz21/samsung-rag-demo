@@ -2,18 +2,18 @@ import {
   customProvider,
   extractReasoningMiddleware,
   wrapLanguageModel,
-  type LanguageModelV1,
+  type LanguageModelV3,
 } from "ai";
 import { isTestEnvironment } from "../constants";
 
 // Dummy language model for cases where AI SDK tries to use models directly
 // The actual AI processing is handled by agent-service via HTTP API
-const createDummyModel = (modelName: string): LanguageModelV1 => {
+const createDummyModel = (modelName: string): LanguageModelV3 => {
   return {
-    specificationVersion: 'v1',
+    specificationVersion: 'V3',
     modelId: modelName,
     provider: 'agent-service',
-    defaultObjectGenerationMode: 'json',
+    supportedUrls: {},
 
     async doGenerate() {
       console.warn(`[AI Provider] Model ${modelName} called directly - this should not happen. All AI requests should go through agent-service.`);
@@ -24,7 +24,7 @@ const createDummyModel = (modelName: string): LanguageModelV1 => {
       console.warn(`[AI Provider] Model ${modelName} stream called directly - this should not happen. All AI requests should go through agent-service.`);
       throw new Error('AI models should be accessed through agent-service HTTP API, not directly through AI SDK');
     },
-  } as LanguageModelV1;
+  } as LanguageModelV3;
 };
 
 export const myProvider = isTestEnvironment
