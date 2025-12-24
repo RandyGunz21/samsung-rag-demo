@@ -230,8 +230,8 @@ services:
       - "3001:3000"  # External 3001, internal 3000
     environment:
       - NODE_ENV=production
-      - NEXT_PUBLIC_RAG_SERVICE_URL=http://rag-service:8000/api/v1
-      - NEXT_PUBLIC_TESTER_SERVICE_URL=http://rag-tester:8001
+      - NEXT_PUBLIC_RAG_SERVICE_URL=http://142.170.89.112:17603/api/v1
+      - NEXT_PUBLIC_TESTER_SERVICE_URL=http://142.170.89.112:17903
     depends_on:
       rag-service:
         condition: service_healthy
