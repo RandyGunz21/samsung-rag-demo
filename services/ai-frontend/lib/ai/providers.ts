@@ -10,7 +10,7 @@ import { isTestEnvironment } from "../constants";
 // The actual AI processing is handled by agent-service via HTTP API
 const createDummyModel = (modelName: string): LanguageModel => {
   return {
-    specificationVersion: 'V2',
+    specificationVersion: 'v2',
     modelId: modelName,
     provider: 'agent-service',
     supportedUrls: {},
