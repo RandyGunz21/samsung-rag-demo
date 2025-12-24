@@ -16,9 +16,16 @@ RUN npm install
 # Copy all source files
 COPY . .
 
+# Accept build arguments for NEXT_PUBLIC_* variables
+ARG NEXT_PUBLIC_RAG_SERVICE_URL
+ARG NEXT_PUBLIC_TESTER_SERVICE_URL
+
 # Set environment for build
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+# Expose build args as environment variables for Next.js build
+ENV NEXT_PUBLIC_RAG_SERVICE_URL=$NEXT_PUBLIC_RAG_SERVICE_URL
+ENV NEXT_PUBLIC_TESTER_SERVICE_URL=$NEXT_PUBLIC_TESTER_SERVICE_URL
 
 # Build Next.js application
 RUN npm run build

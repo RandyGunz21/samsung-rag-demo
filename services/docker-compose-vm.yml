@@ -224,6 +224,9 @@ services:
     build:
       context: ./rag-admin-ui
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_RAG_SERVICE_URL: http://142.170.89.112:17603/api/v1
+        NEXT_PUBLIC_TESTER_SERVICE_URL: http://142.170.89.112:17903
     container_name: rag-admin-ui
     restart: unless-stopped
     ports:
