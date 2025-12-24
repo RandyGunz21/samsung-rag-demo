@@ -71,8 +71,8 @@ services:
       - HOST=0.0.0.0
       - PORT=8000
       # Ollama Configuration (externally hosted via Cloudflare tunnel)
-      - OLLAMA_URL=http://93.91.156.91:54977
-      - OLLAMA_BEARER_TOKEN=feb840dc96f203fd30ea26d153fec541500ded0a4b4be7894f4fd9f6c8c72327
+      - OLLAMA_URL=http://212.247.220.144:26214/
+      - OLLAMA_BEARER_TOKEN=b6b1efb046b3fe33546af942abed13fc9e152b8aebabbd2eecfe41efdc45656c
       - EMBEDDING_MODEL=qwen3-embedding:8b
       - OLLAMA_MODEL=llama4:scout
       # Vector Store Configuration
