@@ -104,6 +104,12 @@ def _override_from_env(config_dict: Dict[str, Any]) -> Dict[str, Any]:
     """Override configuration values from environment variables."""
 
     # LLM configuration
+    if os.getenv("OLLAMA_URL"):
+        config_dict.setdefault("llm", {})
+        config_dict["llm"]["base_url"] = os.getenv("OLLAMA_URL")
+        config_dict.setdefault("embeddings", {})
+        config_dict["embeddings"]["base_url"] = os.getenv("OLLAMA_URL")
+
     if os.getenv("OLLAMA_BASE_URL"):
         config_dict.setdefault("llm", {})
         config_dict["llm"]["base_url"] = os.getenv("OLLAMA_BASE_URL")
@@ -111,6 +117,10 @@ def _override_from_env(config_dict: Dict[str, Any]) -> Dict[str, Any]:
     if os.getenv("OLLAMA_MODEL"):
         config_dict.setdefault("llm", {})
         config_dict["llm"]["model"] = os.getenv("OLLAMA_MODEL")
+
+    if os.getenv("OLLAMA_BEARER_TOKEN"):
+        config_dict.setdefault("llm", {})
+        config_dict["llm"]["bearer_token"] = os.getenv("OLLAMA_BEARER_TOKEN")
 
     # Embedding configuration
     if os.getenv("EMBEDDING_MODEL"):

@@ -19,6 +19,7 @@ class OllamaLLM:
         self,
         model: str = "gemma2:2b",
         base_url: str = "http://localhost:11434",
+        bearer_token: str = None,
         temperature: float = 0.1,
         max_tokens: Optional[int] = 512,
         timeout: int = 60,
@@ -29,17 +30,32 @@ class OllamaLLM:
         Args:
             model: Model name (e.g., 'gemma2:2b', 'llama3:8b')
             base_url: Ollama API base URL
+            bearer_token: Bearer token for Ollama API authentication (REQUIRED)
             temperature: Sampling temperature (0=deterministic, 1=creative)
             max_tokens: Maximum tokens to generate
             timeout: Request timeout in seconds
+
+        Raises:
+            ValueError: If bearer_token is not provided
         """
+        if not bearer_token:
+            raise ValueError("OLLAMA_BEARER_TOKEN is required but not provided. Please set the environment variable.")
+
         self.model = model
         self.base_url = base_url
+        self.bearer_token = bearer_token
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.timeout = timeout
 
         logger.info(f"Initializing Ollama LLM: model={model}, base_url={base_url}")
+
+        # Configure client with bearer token authentication
+        client_kwargs = {
+            "headers": {
+                "Authorization": f"Bearer {bearer_token}"
+            }
+        }
 
         self.llm = ChatOllama(
             model=model,
@@ -47,9 +63,10 @@ class OllamaLLM:
             temperature=temperature,
             num_predict=max_tokens,
             timeout=timeout,
+            client_kwargs=client_kwargs,
         )
 
-        logger.info("Ollama LLM initialized successfully")
+        logger.info("Ollama LLM initialized successfully with authentication")
 
     def invoke(self, prompt: str) -> str:
         """

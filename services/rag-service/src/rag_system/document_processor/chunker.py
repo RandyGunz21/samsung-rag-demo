@@ -22,6 +22,7 @@ class DocumentChunker:
         self,
         embedding_model: str = "qwen3-embedding:8b",
         base_url: str = "http://localhost:11434",
+        bearer_token: str = None,
         breakpoint_threshold_type: str = "percentile",
         breakpoint_threshold_amount: Optional[float] = None,
         chunk_size: int = 1000,
@@ -36,6 +37,7 @@ class DocumentChunker:
         Args:
             embedding_model: Ollama embedding model to use (default: qwen3-embedding:8b)
             base_url: Ollama API base URL (default: http://localhost:11434)
+            bearer_token: Bearer token for Ollama API authentication (REQUIRED)
             breakpoint_threshold_type: Method for determining split points
                 - "percentile" (default): Split at differences greater than X percentile
                 - "standard_deviation": Split at differences greater than X std devs
@@ -46,9 +48,16 @@ class DocumentChunker:
             max_chunk_size: Maximum characters per chunk before recursive splitting (default: 1500)
             separators: Separators for recursive text splitting
             add_start_index: Whether to add start index metadata to chunks
+
+        Raises:
+            ValueError: If bearer_token is not provided
         """
+        if not bearer_token:
+            raise ValueError("OLLAMA_BEARER_TOKEN is required but not provided. Please set the environment variable.")
+
         self.embedding_model = embedding_model
         self.base_url = base_url
+        self.bearer_token = bearer_token
         self.breakpoint_threshold_type = breakpoint_threshold_type
         self.breakpoint_threshold_amount = breakpoint_threshold_amount
         self.add_start_index = add_start_index
@@ -63,9 +72,17 @@ class DocumentChunker:
         try:
             logger.info(f"Initializing OllamaEmbeddings with model: {embedding_model}")
 
+            # Configure client with bearer token authentication
+            client_kwargs = {
+                "headers": {
+                    "Authorization": f"Bearer {bearer_token}"
+                }
+            }
+
             self.embeddings = OllamaEmbeddings(
                 model=embedding_model,
                 base_url=base_url,
+                client_kwargs=client_kwargs,
             )
 
             # Initialize SemanticChunker

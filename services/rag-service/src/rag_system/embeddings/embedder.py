@@ -19,6 +19,7 @@ class EmbeddingGenerator:
         self,
         model_name: str = "qwen3-embedding:8b",
         base_url: str = "http://localhost:11434",
+        bearer_token: str = None,
     ):
         """
         Initialize embedding generator using Ollama.
@@ -26,20 +27,36 @@ class EmbeddingGenerator:
         Args:
             model_name: Ollama embedding model name (e.g., 'qwen3-embedding:8b')
             base_url: Ollama API base URL (e.g., 'http://localhost:11434')
+            bearer_token: Bearer token for Ollama API authentication (REQUIRED)
+
+        Raises:
+            ValueError: If bearer_token is not provided
         """
+        if not bearer_token:
+            raise ValueError("OLLAMA_BEARER_TOKEN is required but not provided. Please set the environment variable.")
+
         self.model_name = model_name
         self.base_url = base_url
+        self.bearer_token = bearer_token
 
         logger.info(f"Initializing Ollama embeddings model: {model_name}")
         logger.info(f"Connecting to Ollama at: {base_url}")
 
-        # Initialize Ollama embeddings
+        # Configure client with bearer token authentication
+        client_kwargs = {
+            "headers": {
+                "Authorization": f"Bearer {bearer_token}"
+            }
+        }
+
+        # Initialize Ollama embeddings with authentication
         self.embeddings = OllamaEmbeddings(
             model=model_name,
             base_url=base_url,
+            client_kwargs=client_kwargs,
         )
 
-        logger.info(f"Ollama embeddings model loaded successfully")
+        logger.info(f"Ollama embeddings model loaded successfully with authentication")
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         """

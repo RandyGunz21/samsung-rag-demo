@@ -57,12 +57,25 @@ class RAGEngine:
 
             logger.info("Initializing LLM for multi-query retrieval...")
 
+            # Get bearer token from config (required)
+            bearer_token = self.config.get("llm.bearer_token")
+            if not bearer_token:
+                raise ValueError("OLLAMA_BEARER_TOKEN is required but not provided. Please set the environment variable.")
+
+            # Configure client with bearer token authentication
+            client_kwargs = {
+                "headers": {
+                    "Authorization": f"Bearer {bearer_token}"
+                }
+            }
+
             self._llm = ChatOllama(
                 model=self.config.get("llm.model", "gemma2:2b"),
                 base_url=self.config.get("llm.base_url", "http://localhost:11434"),
                 temperature=0.0,  # Deterministic for query generation
+                client_kwargs=client_kwargs,
             )
-            logger.info(f"LLM initialized: {self.config.get('llm.model', 'gemma2:2b')}")
+            logger.info(f"LLM initialized with authentication: {self.config.get('llm.model', 'gemma2:2b')}")
 
         return self._llm
 
@@ -126,6 +139,11 @@ class RAGEngine:
 
     def _initialize_components(self):
         """Initialize all RAG components."""
+        # Get bearer token from config (required for all Ollama components)
+        bearer_token = self.config.get("llm.bearer_token")
+        if not bearer_token:
+            raise ValueError("OLLAMA_BEARER_TOKEN is required but not provided. Please set the environment variable.")
+
         # Document processing
         self.document_loader = DocumentLoader(
             supported_formats=self.config.get("document_processing.supported_formats"),
@@ -136,6 +154,7 @@ class RAGEngine:
         self.document_chunker = DocumentChunker(
             embedding_model=self.config.get("embeddings.model", "qwen3-embedding:8b"),
             base_url=self.config.get("embeddings.base_url", "http://localhost:11434"),
+            bearer_token=bearer_token,
             breakpoint_threshold_type=self.config.get("document_processing.breakpoint_threshold_type", "percentile"),
             breakpoint_threshold_amount=self.config.get("document_processing.breakpoint_threshold_amount"),
             chunk_size=self.config.get("document_processing.chunk_size", 1000),
@@ -149,6 +168,7 @@ class RAGEngine:
         self.embedding_generator = EmbeddingGenerator(
             model_name=self.config.get("embeddings.model", "qwen3-embedding:8b"),
             base_url=self.config.get("embeddings.base_url", "http://localhost:11434"),
+            bearer_token=bearer_token,
         )
 
         # Vector store

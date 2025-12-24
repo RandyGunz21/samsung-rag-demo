@@ -71,6 +71,7 @@ class ChatAgent:
             self._llm = OllamaLLM(
                 model=config.get("llm.model"),
                 base_url=config.get("llm.base_url"),
+                bearer_token=config.get("llm.bearer_token"),
                 temperature=config.get("llm.temperature", 0.1),
                 max_tokens=config.get("llm.max_tokens", 512),
                 timeout=config.get("llm.timeout", 60),

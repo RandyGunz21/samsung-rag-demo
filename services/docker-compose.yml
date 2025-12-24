@@ -70,8 +70,9 @@ services:
     environment:
       - HOST=0.0.0.0
       - PORT=8000
-      # Ollama Configuration
-      - OLLAMA_URL=http://localhost:11434
+      # Ollama Configuration (externally hosted via Cloudflare tunnel)
+      - OLLAMA_URL=http://93.91.156.91:54977
+      - OLLAMA_BEARER_TOKEN=feb840dc96f203fd30ea26d153fec541500ded0a4b4be7894f4fd9f6c8c72327
       - EMBEDDING_MODEL=qwen3-embedding:8b
       - OLLAMA_MODEL=llama4:scout
       # Vector Store Configuration
@@ -107,9 +108,10 @@ services:
     environment:
       - HOST=0.0.0.0
       - PORT=8001
-      - RAG_SERVICE_URL=http://rag-service:8000/api/v1
+      - RAG_SERVICE_URL=http://93.91.156.91:54977
       # Ollama hosted externally via Cloudflare tunnel
       - OLLAMA_URL=http://localhost:11434
+      - OLLAMA_BEARER_TOKEN=feb840dc96f203fd30ea26d153fec541500ded0a4b4be7894f4fd9f6c8c72327
       - CORS_ORIGINS=http://localhost:3000,http://localhost:5173,http://frontend:3000
       - DEBUG=false
     depends_on:
@@ -254,7 +256,7 @@ services:
     container_name: vercel-chatbot
     restart: unless-stopped
     ports:
-      - "3000:3000"  # External 3100, internal 3000
+      - "3000:3000"  # External 3000, internal 3000
     environment:
       # Database Configuration - Uses separate database
       - POSTGRES_URL=postgres://aiuser:aipassword123@postgres:5432/vercel_chatbot
